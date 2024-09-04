@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dock Scheduler</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <h1>Dock Schedule Checker</h1>
+
+    <div id="controls">
+        <textarea id="jsonInput" rows="10" cols="50" placeholder="Paste JSON here"></textarea>
+        <button id="loadButton">Load Routes</button>
+    </div>
+
+    <h2>Select Route</h2>
+    <select id="routeSelect">
+        <option value="">Select a route</option>
+    </select>
+
+    <button id="analyzeButton">Analyze</button>
+
+    <h2>Possible Times to Move the Route</h2>
+    <div id="possibleTimes"></div>
+
+    <h2>Dock Calendar</h2>
+    <div id="calendar">
+        <div class="dock" id="dock1">Dock 1</div>
+        <div class="dock" id="dock2">Dock 2</div>
+        <div class="dock" id="dock3">Dock 3</div>
+        <div class="dock" id="dock4">Dock 4</div>
+    </div>
+
+    <div id="errorModal">
+        <div class="modal-content">
+            <p id="errorMessage">Error: Something went wrong!</p>
+            <button onclick="closeErrorModal()">Close</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
