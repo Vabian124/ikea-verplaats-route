@@ -57,13 +57,15 @@ function populateRouteSelection() {
 
 function renderCalendar() {
     const docks = { 'Dock 1': [], 'Dock 2': [], 'Dock 3': [], 'Dock 4': [] };
+    
+    // Collect all dock slots with proper times and margins
     routes.forEach(route => {
         const dock = normalizeDock(route.gate);
         if (!docks[dock]) {
             docks[dock] = [];
         }
         const startTime = new Date(route.plannedArrival);
-        const endTime = new Date(startTime.getTime() + 30 * 60000); // Half-hour interval
+        const endTime = new Date(route.plannedDeparture); // Using full time from JSON
         docks[dock].push({ startTime, endTime, route });
     });
 
@@ -95,6 +97,7 @@ function normalizeDock(dockName) {
     return dockName;
 }
 
+// Analyze if the selected route can be moved earlier, considering time margins
 function analyzeRoute() {
     const selectedRouteId = document.getElementById('routeSelect').value;
     const selectedRoute = routes.find(route => route.id === selectedRouteId);
@@ -107,22 +110,47 @@ function analyzeRoute() {
     const dock = normalizeDock(selectedRoute.gate);
     const originalStartTime = new Date(selectedRoute.plannedArrival);
 
-    // Define the time range to check (e.g., 3 hours before the original time)
-    const timeSlots = [];
-    const timeInterval = 30 * 60000; // 30 minutes
-    const numberOfSlots = 6; // Number of slots to check before the original time
+    const availableSlots = findAvailableSlots(dock, originalStartTime);
 
-    timeSlots.push({ time: originalStartTime, available: true });
+    displayAvailableTimes(availableSlots);
+}
 
-    for (let i = 1; i <= numberOfSlots; i++) {
-        const newTime = new Date(originalStartTime.getTime() - i * timeInterval);
-        if (newTime < new Date()) continue; // Skip times in the past
-        const isAvailable = dockAvailabilityCheck(dock, newTime);
-        timeSlots.push({ time: newTime, available: isAvailable });
+function findAvailableSlots(dock, originalStartTime) {
+    // Get all the time slots for the dock and apply margin logic
+    const busySlots = routes
+        .filter(route => normalizeDock(route.gate) === dock)
+        .map(route => ({
+            startTime: new Date(route.plannedArrival),
+            endTime: new Date(route.plannedDeparture)
+        }));
+
+    const availableSlots = [];
+    const interval = 30 * 60000; // 30-minute intervals
+
+    // Check 3 hours before the current route and 3 hours after for available slots
+    for (let i = -6; i <= 6; i++) {
+        const checkTime = new Date(originalStartTime.getTime() + i * interval);
+        const isAvailable = isTimeAvailable(busySlots, checkTime);
+
+        // Add to available slots with status
+        availableSlots.push({ time: checkTime, available: isAvailable });
     }
 
+    return availableSlots;
+}
+
+function isTimeAvailable(busySlots, checkTime) {
+    // Check if the checkTime conflicts with any busy slot
+    return !busySlots.some(slot => {
+        const marginAdjustedStart = new Date(slot.startTime.getTime() - timeMargin * 60000);
+        const marginAdjustedEnd = new Date(slot.endTime.getTime() + timeMargin * 60000);
+        return checkTime >= marginAdjustedStart && checkTime < marginAdjustedEnd;
+    });
+}
+
+function displayAvailableTimes(availableSlots) {
     let message = '<ul>';
-    timeSlots.sort((a, b) => a.time - b.time).forEach(slot => {
+    availableSlots.sort((a, b) => a.time - b.time).forEach(slot => {
         const timeString = slot.time.toLocaleTimeString();
         const status = slot.available ? 'Available' : 'Occupied';
         const statusClass = slot.available ? 'success' : 'error';
@@ -130,24 +158,6 @@ function analyzeRoute() {
     });
     message += '</ul>';
     displayMessage(message);
-}
-
-function dockAvailabilityCheck(dock, timeToCheck) {
-    const busySlots = routes
-        .filter(route => normalizeDock(route.gate) === dock)
-        .map(route => ({
-            startTime: new Date(route.plannedArrival),
-            endTime: new Date(new Date(route.plannedArrival).getTime() + 30 * 60000)
-        }));
-
-    // 5-minute margin handling
-    const marginTime = new Date(timeToCheck.getTime() - timeMargin * 60000);
-
-    return !busySlots.some(slot =>
-        (timeToCheck >= slot.startTime && timeToCheck < slot.endTime) ||
-        (new Date(timeToCheck.getTime() + 30 * 60000) > slot.startTime && new Date(timeToCheck.getTime() + 30 * 60000) <= slot.endTime) ||
-        (marginTime >= slot.startTime && marginTime < slot.endTime)
-    );
 }
 
 function showRouteDetails(route) {
