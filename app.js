@@ -151,6 +151,9 @@ function dockAvailabilityCheck(dock, timeToCheck) {
 }
 
 function showRouteDetails(route) {
+    // Ensure no crashes if route.driver is undefined
+    const driver = route.driver || { name: { first: 'Unknown', last: '' }, phone: { formatted: 'N/A' } };
+    
     const modal = document.getElementById('routeDetailsModal');
     const routeDetails = document.getElementById('routeDetails');
     routeDetails.innerHTML = `
@@ -158,8 +161,8 @@ function showRouteDetails(route) {
         <strong>Dock:</strong> ${route.gate}<br>
         <strong>Arrival Time:</strong> ${new Date(route.plannedArrival).toLocaleTimeString()}<br>
         <strong>Departure Time:</strong> ${new Date(route.plannedDeparture).toLocaleTimeString()}<br>
-        <strong>Driver Name:</strong> ${route.driver.name.first} ${route.driver.name.last}<br>
-        <strong>Driver Phone:</strong> ${route.driver.phone.formatted}
+        <strong>Driver Name:</strong> ${driver.name.first} ${driver.name.last}<br>
+        <strong>Driver Phone:</strong> ${driver.phone.formatted}
     `;
     modal.style.display = 'block';
 }
