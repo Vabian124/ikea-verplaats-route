@@ -1,5 +1,6 @@
 let routes = [];
 let movedRoutes = [];
+let timeMargin = 5;  // Default margin in minutes
 
 document.getElementById('loadButton').addEventListener('click', loadRoutesFromJSON);
 document.getElementById('analyzeButton').addEventListener('click', analyzeRoute);
@@ -43,6 +44,7 @@ function analyzeRoute() {
 
     const originalStartTime = new Date(selectedRoute.plannedArrival);
 
+    // Ensure findAvailableSlots is properly defined and works with time margin
     const availableSlots = findAvailableSlots(originalStartTime);
     displayAvailableTimes(availableSlots);
 }
@@ -74,7 +76,12 @@ function moveRoute(newTime, dock) {
     renderCalendar();  // Re-render with updated moved routes
 }
 
-function displayError(message) {
+function displayMessage(message, type) {
     const messageBox = document.getElementById('possibleTimes');
-    messageBox.innerHTML = `<div class="error">${message}</div>`;
+    const messageTypeClass = type === 'success' ? 'success' : 'error';
+    messageBox.innerHTML = `<div class="${messageTypeClass}">${message}</div>`;
+}
+
+function displayError(message) {
+    displayMessage(message, 'error');
 }
