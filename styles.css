@@ -38,8 +38,9 @@ button:hover {
 
 #calendar {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-template-columns: repeat(4, 1fr); /* Ensures 4 even columns */
     gap: 20px;
+    margin-top: 20px;
 }
 
 .dock {
@@ -54,6 +55,27 @@ button:hover {
     padding: 5px;
     border: 1px solid #ccc;
     margin: 5px 0;
+    position: relative;
+    border-radius: 4px;
+}
+
+.dock span.moved-route {
+    border: 2px solid orange; /* Orange outline for moved routes */
+}
+
+.dock span .remove-btn {
+    position: absolute;
+    right: 5px;
+    top: 5px;
+    background-color: red;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 0.8em;
+}
+
+.dock span .remove-btn:hover {
+    background-color: darkred;
 }
 
 .modal {
@@ -90,3 +112,34 @@ button:hover {
     text-decoration: none;
     cursor: pointer;
 }
+
+/* Color coding for dock buttons */
+.dock-button {
+    padding: 10px;
+    margin: 5px;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.dock-button.dock-1 {
+    background-color: #3498db; /* Blue for Dock 1 */
+}
+
+.dock-button.dock-2 {
+    background-color: #e74c3c; /* Red for Dock 2 */
+}
+
+.dock-button.dock-3 {
+    background-color: #2ecc71; /* Green for Dock 3 */
+}
+
+.dock-button.dock-4 {
+    background-color: #f39c12; /* Yellow/Orange for Dock 4 */
+}
+
+.dock-button:hover {
+    opacity: 0.9;
+}
+
