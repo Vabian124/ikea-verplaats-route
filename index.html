@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dock Scheduler</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="app.js" defer></script>
 </head>
 <body>
 
@@ -13,6 +15,8 @@
     <div id="controls">
         <textarea id="jsonInput" rows="5" cols="50" placeholder="Paste JSON here"></textarea>
         <button id="loadButton">Load Routes</button>
+        <label for="dockMargin">Buffer Time (mins):</label>
+        <input type="number" id="dockMargin" value="5" min="0">
     </div>
 
     <h2>Select Route</h2>
@@ -26,14 +30,15 @@
 
     <h2>Dock Calendar</h2>
     <div id="calendar" class="dock-grid">
-        <div id="dock1" class="dock"></div>
-        <div id="dock2" class="dock"></div>
-        <div id="dock3" class="dock"></div>
-        <div id="dock4" class="dock"></div>
+        <!-- Docks will be dynamically rendered here -->
     </div>
 
-    <script src="calendar.js"></script>
-    <script src="app.js"></script>
+    <div id="routeDetailsModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="routeInfo"></div>
+        </div>
+    </div>
 
 </body>
 </html>

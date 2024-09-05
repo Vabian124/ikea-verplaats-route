@@ -13,13 +13,15 @@ h1, h2 {
 #controls {
     display: flex;
     justify-content: center;
-    margin: 20px auto;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
 }
 
-textarea, select, button {
-    font-size: 1em;
+textarea, select, button, input {
     padding: 10px;
     margin: 10px;
+    font-size: 1em;
     border: 1px solid #ccc;
     border-radius: 5px;
 }
@@ -34,38 +36,9 @@ button:hover {
     background-color: #45a049;
 }
 
-#possibleTimes {
-    margin: 20px auto;
-    font-size: 1.1em;
-    max-width: 900px;
-    padding: 15px;
-    background: #f9f9f9;
-    border: 1px solid #ddd;
-    border-radius: 10px;
-}
-
-.dock-time {
-    padding: 10px;
-    margin-bottom: 5px;
-    border-bottom: 1px solid #ddd;
-}
-
-.move-button {
-    background-color: #ff9800;
-    color: white;
-    border: none;
-    padding: 5px;
-    cursor: pointer;
-}
-
 #calendar {
-    margin-top: 20px;
-    padding: 20px;
-}
-
-.dock-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 20px;
 }
 
@@ -74,11 +47,6 @@ button:hover {
     padding: 15px;
     border-radius: 10px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    transition: box-shadow 0.3s ease;
-}
-
-.dock:hover {
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
 }
 
 .dock span {
@@ -86,4 +54,39 @@ button:hover {
     padding: 5px;
     border: 1px solid #ccc;
     margin: 5px 0;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    padding-top: 100px;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    text-align: left;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
 }
