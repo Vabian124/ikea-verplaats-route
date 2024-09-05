@@ -48,50 +48,47 @@ button:hover {
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
     cursor: pointer;
 }
-
-/* Color coating for free and occupied docks */
-.free {
-    background-color: #8bc34a;
-    color: white;
-}
-.occupied {
-    background-color: #f44336;
-    color: white;
-}
-.error {
-    color: red;
-}
-
-/* Modal and settings */
-#routeDetailsModal {
-    display: none;
-    position: fixed;
-    z-index: 1;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-}
-.modal-content {
-    background-color: #fff;
-    margin: 15% auto;
-    padding: 20px;
-    border: 1px solid #888;
-    width: 80%;
-}
-#closeModal {
-    float: right;
-    font-size: 24px;
-    cursor: pointer;
-}
-
-/* Settings section */
-#settings {
-    margin-top: 20px;
-    padding: 10px;
+.dock span {
+    display: block;
+    padding: 5px;
     border: 1px solid #ccc;
-    max-width: 300px;
+    margin: 5px 0;
+}
+#possibleTimes {
+    text-align: left;
+    margin: 20px;
+    font-size: 1.2em;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 15px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+}
+
+#possibleTimes .dock-time {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    font-size: 1.1em;
+}
+
+#possibleTimes .move-button {
+    background-color: #ff9800;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+#settingsMenu {
+    margin-top: 40px;
+    padding: 30px;
+    background-color: #fff;
+    max-width: 600px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     margin-left: auto;
     margin-right: auto;
 }
