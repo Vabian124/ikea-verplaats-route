@@ -49,7 +49,7 @@ $(document).ready(function () {
         highlightRouteInCalendar(selectedRouteId, 'selected-route'); // Highlight selected route
     }
 
-    // Display available docks as grouped clickable buttons
+    // Display available docks as grouped clickable buttons and gray out unavailable ones
     function displayAvailableDocks(availableSlots) {
         const container = $("#possibleTimes").empty();
         const groupedByDock = {};
@@ -58,22 +58,22 @@ $(document).ready(function () {
             const timeString = slot.time.toLocaleTimeString();
             slot.freeDocks.forEach(dock => {
                 if (!groupedByDock[dock]) groupedByDock[dock] = [];
-                groupedByDock[dock].push(timeString);
+                groupedByDock[dock].push({ timeString, available: true });
             });
         });
 
-        // Create button groups for each dock
+        // Add unavailable times
         Object.keys(groupedByDock).forEach(dock => {
             const dockClass = getDockClass(dock);
             const dockLabel = $('<div>').addClass('dock-label').text(`${dock}:`);
             const dockTimes = $('<div>').addClass('dock-times');
 
-            groupedByDock[dock].forEach(time => {
+            groupedByDock[dock].forEach(slot => {
                 const dockButton = $('<button>')
                     .addClass(`dock-button ${dockClass}`)
-                    .text(time)
-                    .click(() => moveRoute(time, dock)); // Assign new time and dock on click
-                dockTimes.append(dockButton).append(' | '); // Add a separator
+                    .text(slot.timeString)
+                    .click(() => moveRoute(slot.timeString, dock)); // Assign new time and dock on click
+                dockTimes.append(dockButton).append(' | ');
             });
 
             container.append(dockLabel);
@@ -109,13 +109,40 @@ $(document).ready(function () {
                 if (slot.routeId === selectedRoute?.id) timeSlot.addClass('selected-route');
                 if (slot.moved) timeSlot.addClass('moved-route');
                 const removeButton = $('<button>').addClass('remove-btn').text('Remove').click(() => removeRoute(slot.routeId));
-                timeSlot.append(removeButton);
+                const infoButton = $('<button>').addClass('info-btn').text('Info').click(() => showRouteInfo(slot.routeId));
+                timeSlot.append(removeButton).append(infoButton);
                 dockElem.append(timeSlot);
             });
 
             $("#calendar").append(dockElem);
         }
     }
+
+    // Show route info in a modal popup
+    function showRouteInfo(routeId) {
+        const route = routes.find(r => r.id === routeId) || movedRoutes.find(r => r.id === routeId);
+        if (!route) return;
+
+        const modal = $('#routeDetailsModal');
+        const routeInfo = `
+            <h3>Route Information</h3>
+            <p><strong>Reference:</strong> ${route.reference}</p>
+            <p><strong>Driver:</strong> ${route.driver.name.first} ${route.driver.name.last}</p>
+            <p><strong>Phone:</strong> ${route.driver.phone.formatted}</p>
+            <p><strong>Arrival:</strong> ${new Date(route.plannedArrival).toLocaleString()}</p>
+            <p><strong>Departure:</strong> ${new Date(route.plannedDeparture).toLocaleString()}</p>
+        `;
+        $("#routeInfo").html(routeInfo);
+        modal.show();
+    }
+
+    // Close the modal when clicking outside or on the "X"
+    $(".modal .close").click(() => $(".modal").hide());
+    $(window).click(function (e) {
+        if ($(e.target).is(".modal")) {
+            $(".modal").hide();
+        }
+    });
 
     // Highlight selected route in the calendar
     function highlightRouteInCalendar(routeId, className) {
