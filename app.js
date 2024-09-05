@@ -1,5 +1,5 @@
 let routes = [];
-let timeMargin = 5; // Default margin
+let timeMargin = 5; // Default margin in minutes
 
 // Event Listeners
 document.getElementById('loadButton').addEventListener('click', loadRoutesFromJSON);
@@ -12,7 +12,6 @@ window.addEventListener('click', (event) => {
     const modal = document.getElementById('routeDetailsModal');
     if (event.target === modal) closeModal();
 });
-
 window.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') closeModal();
 });
@@ -76,7 +75,11 @@ function renderCalendar() {
         }
         const startTime = new Date(route.plannedArrival);
         const endTime = new Date(route.plannedDeparture); // Using full time from JSON
-        docks[dock].push({ startTime, endTime, route });
+        
+        // Adjust loading time by reducing the margin
+        const adjustedEndTime = new Date(endTime.getTime() - timeMargin * 60000);
+        
+        docks[dock].push({ startTime, endTime: adjustedEndTime, route });
     });
 
     for (let i = 1; i <= 4; i++) {
@@ -90,6 +93,7 @@ function renderCalendar() {
                     const timeRange = `${slot.startTime.toLocaleTimeString()} - ${slot.endTime.toLocaleTimeString()}`;
                     const timeSlot = document.createElement('div');
                     timeSlot.innerHTML = timeRange;
+                    timeSlot.classList.add('occupied');  // Occupied dock slots are marked red
                     timeSlot.addEventListener('click', () => showRouteDetails(slot.route));
                     dockElem.appendChild(timeSlot);
                 });
@@ -107,7 +111,6 @@ function normalizeDock(dockName) {
     return dockName;
 }
 
-// Analyze if the selected route can be moved earlier, considering time margins
 function analyzeRoute() {
     const selectedRouteId = document.getElementById('routeSelect').value;
     const selectedRoute = routes.find(route => route.id === selectedRouteId);
@@ -125,13 +128,11 @@ function analyzeRoute() {
 }
 
 function findAvailableSlots(originalStartTime) {
-    // Get all the time slots for each dock and apply margin logic
     const busySlotsByDock = getBusySlotsByDock();
 
     const availableSlots = [];
     const interval = 30 * 60000; // 30-minute intervals
 
-    // Check 3 hours before the current route and 3 hours after for available slots
     for (let i = -6; i <= 6; i++) {
         const checkTime = new Date(originalStartTime.getTime() + i * interval);
         const freeDocks = findFreeDocksAtTime(busySlotsByDock, checkTime);
@@ -153,7 +154,8 @@ function getBusySlotsByDock() {
         const dock = normalizeDock(route.gate);
         const startTime = new Date(route.plannedArrival);
         const endTime = new Date(route.plannedDeparture);
-        busySlotsByDock[dock].push({ startTime, endTime });
+        const adjustedEndTime = new Date(endTime.getTime() - timeMargin * 60000); // Apply the time margin
+        busySlotsByDock[dock].push({ startTime, endTime: adjustedEndTime });
     });
 
     return busySlotsByDock;
@@ -165,7 +167,7 @@ function findFreeDocksAtTime(busySlotsByDock, timeToCheck) {
     for (const [dock, busySlots] of Object.entries(busySlotsByDock)) {
         const isDockFree = busySlots.every(slot => {
             const marginAdjustedStart = new Date(slot.startTime.getTime() - timeMargin * 60000);
-            const marginAdjustedEnd = new Date(slot.endTime.getTime() + timeMargin * 60000);
+            const marginAdjustedEnd = slot.endTime;
             return !(timeToCheck >= marginAdjustedStart && timeToCheck < marginAdjustedEnd);
         });
 
@@ -182,14 +184,14 @@ function displayAvailableTimes(availableSlots) {
     availableSlots.sort((a, b) => a.time - b.time).forEach(slot => {
         const timeString = slot.time.toLocaleTimeString();
         const freeDocks = slot.freeDocks.length > 0 ? `Free Docks: ${slot.freeDocks.join(', ')}` : 'No Free Docks';
-        message += `<li>${timeString} - ${freeDocks}</li>`;
+        const slotClass = slot.freeDocks.length > 0 ? 'free' : 'occupied';
+        message += `<li class="${slotClass}">${timeString} - ${freeDocks}</li>`;
     });
     message += '</ul>';
     displayMessage(message);
 }
 
 function showRouteDetails(route) {
-    // Ensure no crashes if route.driver is undefined
     const driver = route.driver || { name: { first: 'Unknown', last: '' }, phone: { formatted: 'N/A' } };
     
     const modal = document.getElementById('routeDetailsModal');
