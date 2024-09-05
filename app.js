@@ -1,24 +1,21 @@
 $(document).ready(function () {
     let routes = [];
     let movedRoutes = [];
+    let selectedRoute = null;
     let timeMargin = 5; // Default margin in minutes
 
-    // Load routes automatically when page loads or JSON is edited
+    // Auto-load routes when page loads or JSON is edited
     $(window).on('load', loadRoutesFromJSON);
     $("#jsonInput").on('input', loadRoutesFromJSON);
 
-    $("#loadButton").click(function () {
-        loadRoutesFromJSON();
-    });
-
-    $("#analyzeButton").click(function () {
-        analyzeRoute();
-    });
+    $("#loadButton").click(loadRoutesFromJSON);
+    $("#analyzeButton").click(analyzeRoute);
 
     $("#dockMargin").change(function () {
         timeMargin = parseInt($("#dockMargin").val());
     });
 
+    // Load routes from JSON and populate calendar
     function loadRoutesFromJSON() {
         const jsonInput = $("#jsonInput").val();
         try {
@@ -32,61 +29,73 @@ $(document).ready(function () {
         }
     }
 
+    // Populate dropdown with routes
     function populateRouteSelection() {
-        const select = $("#routeSelect");
-        select.empty().append('<option value="">Select a route</option>');
+        const select = $("#routeSelect").empty().append('<option value="">Select a route</option>');
         routes.forEach(route => {
             const option = $('<option>').val(route.id).text(`${route.reference} (${new Date(route.plannedArrival).toLocaleTimeString()}) - Dock: ${route.gate}`);
             select.append(option);
         });
     }
 
+    // Analyze selected route and display available docks
     function analyzeRoute() {
         const selectedRouteId = $("#routeSelect").val();
         if (!selectedRouteId) return displayMessage('Please select a route.', 'error');
-
-        const selectedRoute = routes.find(route => route.id === selectedRouteId);
+        selectedRoute = routes.find(route => route.id === selectedRouteId);
         const originalStartTime = new Date(selectedRoute.plannedArrival);
-
         const availableSlots = findAvailableSlots(originalStartTime);
-        displayAvailableDocks(selectedRoute, availableSlots);
+        displayAvailableDocks(availableSlots);
+        highlightRouteInCalendar(selectedRouteId, 'selected-route'); // Highlight selected route
     }
 
-    function displayAvailableDocks(route, availableSlots) {
-        const container = $("#possibleTimes");
-        container.empty();
+    // Display available docks as grouped clickable buttons
+    function displayAvailableDocks(availableSlots) {
+        const container = $("#possibleTimes").empty();
+        const groupedByDock = {};
 
         availableSlots.forEach(slot => {
             const timeString = slot.time.toLocaleTimeString();
-            const freeDocks = slot.freeDocks;
-            if (freeDocks.length > 0) {
-                freeDocks.forEach(dock => {
-                    const dockClass = getDockClass(dock); // Get color class for each dock
-                    const dockButton = $('<button>').addClass(`dock-button ${dockClass}`).text(`${dock} at ${timeString}`);
-                    dockButton.click(() => moveRoute(route, slot.time, dock));
-                    container.append(dockButton);
-                });
-            }
+            slot.freeDocks.forEach(dock => {
+                if (!groupedByDock[dock]) groupedByDock[dock] = [];
+                groupedByDock[dock].push(timeString);
+            });
+        });
+
+        // Create button groups for each dock
+        Object.keys(groupedByDock).forEach(dock => {
+            const dockClass = getDockClass(dock);
+            const dockLabel = $('<div>').addClass('dock-label').text(`${dock}:`);
+            const dockTimes = $('<div>').addClass('dock-times');
+
+            groupedByDock[dock].forEach(time => {
+                const dockButton = $('<button>')
+                    .addClass(`dock-button ${dockClass}`)
+                    .text(time)
+                    .click(() => moveRoute(time, dock)); // Assign new time and dock on click
+                dockTimes.append(dockButton).append(' | '); // Add a separator
+            });
+
+            container.append(dockLabel);
+            container.append(dockTimes);
         });
     }
 
-    function moveRoute(route, newTime, dock) {
-        const newRoute = { ...route, plannedArrival: newTime, gate: dock };
+    // Move selected route to a new time and dock
+    function moveRoute(newTime, dock) {
+        const newRoute = { ...selectedRoute, plannedArrival: newTime, gate: dock };
         movedRoutes.push(newRoute);
-        renderCalendar();
+        renderCalendar(); // Re-render calendar with updated routes
     }
 
+    // Render calendar with dock schedules, applying outlines for moved/selected routes
     function renderCalendar() {
         const docks = { 'Dock 1': [], 'Dock 2': [], 'Dock 3': [], 'Dock 4': [] };
 
         [...routes, ...movedRoutes].forEach(route => {
-            const dock = normalizeDock(route.gate);  // Normalize dock names
+            const dock = normalizeDock(route.gate);
             const startTime = new Date(route.plannedArrival).toLocaleTimeString();
-
-            if (!docks[dock]) {
-                docks[dock] = [];  // Initialize dock if it doesn't exist
-            }
-
+            if (!docks[dock]) docks[dock] = [];
             docks[dock].push({ startTime, reference: route.reference, routeId: route.id, moved: movedRoutes.includes(route) });
         });
 
@@ -95,51 +104,37 @@ $(document).ready(function () {
             const dockName = `Dock ${i}`;
             const dockElem = $('<div>').addClass('dock').html(`<strong>${dockName}</strong><br>`);
 
-            docks[dockName]
-                .sort((a, b) => new Date(`1970/01/01 ${a.startTime}`) - new Date(`1970/01/01 ${b.startTime}`))
-                .forEach(slot => {
-                    const timeSlot = $('<span>').html(`${slot.startTime} - ${slot.reference}`);
-                    if (slot.moved) {
-                        timeSlot.addClass('moved-route'); // Add orange outline if route was moved
-                    }
-                    const removeButton = $('<button>').addClass('remove-btn').text('Remove').click(() => removeRoute(slot.routeId));
-                    timeSlot.append(removeButton);
-                    dockElem.append(timeSlot);
-                });
+            docks[dockName].sort((a, b) => new Date(`1970/01/01 ${a.startTime}`) - new Date(`1970/01/01 ${b.startTime}`)).forEach(slot => {
+                const timeSlot = $('<span>').html(`${slot.startTime} - ${slot.reference}`);
+                if (slot.routeId === selectedRoute?.id) timeSlot.addClass('selected-route');
+                if (slot.moved) timeSlot.addClass('moved-route');
+                const removeButton = $('<button>').addClass('remove-btn').text('Remove').click(() => removeRoute(slot.routeId));
+                timeSlot.append(removeButton);
+                dockElem.append(timeSlot);
+            });
 
             $("#calendar").append(dockElem);
         }
     }
 
+    // Highlight selected route in the calendar
+    function highlightRouteInCalendar(routeId, className) {
+        $(".dock span").removeClass(className); // Remove previous highlights
+        $(`.dock span:contains(${routeId})`).addClass(className); // Highlight selected route
+    }
+
+    // Remove a route and update calendar
     function removeRoute(routeId) {
         movedRoutes = movedRoutes.filter(route => route.id !== routeId);
-        renderCalendar();
+        if (selectedRoute?.id === routeId) selectedRoute = null; // Clear selection if route is removed
+        renderCalendar(); // Re-render calendar
     }
 
-    function getBusySlotsByDock() {
-        const busySlotsByDock = { 'Dock 1': [], 'Dock 2': [], 'Dock 3': [], 'Dock 4': [] };
-
-        routes.forEach(route => {
-            const dock = normalizeDock(route.gate);
-            const startTime = new Date(route.plannedArrival);
-            const endTime = new Date(route.plannedDeparture);
-            const adjustedEndTime = new Date(endTime.getTime() - timeMargin * 60000); // Apply the time margin
-
-            if (!busySlotsByDock[dock]) {
-                busySlotsByDock[dock] = [];
-            }
-
-            busySlotsByDock[dock].push({ startTime, endTime: adjustedEndTime });
-        });
-
-        return busySlotsByDock;
-    }
-
+    // Find available slots considering buffer times
     function findAvailableSlots(originalStartTime) {
         const busySlotsByDock = getBusySlotsByDock();
-
         const availableSlots = [];
-        const interval = 30 * 60000;
+        const interval = 30 * 60000; // 30-minute intervals
 
         for (let i = -6; i <= 6; i++) {
             const checkTime = new Date(originalStartTime.getTime() + i * interval);
@@ -150,50 +145,49 @@ $(document).ready(function () {
         return availableSlots;
     }
 
+    // Check if docks are free at a given time
     function findFreeDocksAtTime(busySlotsByDock, timeToCheck) {
         const freeDocks = [];
 
-        for (const [dock, busySlots] of Object.entries(busySlotsByDock)) {
-            const isDockFree = busySlots.every(slot => {
+        Object.entries(busySlotsByDock).forEach(([dock, busySlots]) => {
+            const isFree = busySlots.every(slot => {
                 const marginAdjustedStart = new Date(slot.startTime.getTime() - timeMargin * 60000);
-                const marginAdjustedEnd = slot.endTime;
-                return !(timeToCheck >= marginAdjustedStart && timeToCheck < marginAdjustedEnd);
+                return !(timeToCheck >= marginAdjustedStart && timeToCheck < slot.endTime);
             });
-
-            if (isDockFree) {
-                freeDocks.push(dock);
-            }
-        }
+            if (isFree) freeDocks.push(dock);
+        });
 
         return freeDocks;
     }
 
-    // Normalize dock names, strip out any suffix after "Dock X"
+    // Get busy slots for each dock
+    function getBusySlotsByDock() {
+        const busySlotsByDock = { 'Dock 1': [], 'Dock 2': [], 'Dock 3': [], 'Dock 4': [] };
+
+        routes.forEach(route => {
+            const dock = normalizeDock(route.gate);
+            const startTime = new Date(route.plannedArrival);
+            const endTime = new Date(route.plannedDeparture);
+            const adjustedEndTime = new Date(endTime.getTime() - timeMargin * 60000);
+            busySlotsByDock[dock].push({ startTime, endTime: adjustedEndTime });
+        });
+
+        return busySlotsByDock;
+    }
+
+    // Normalize dock names
     function normalizeDock(dockName) {
-        const match = dockName.match(/(Dock \d+)/);  // Match "Dock X" part only
-        return match ? match[1] : dockName;  // Return normalized dock name or fallback
+        return dockName.match(/(Dock \d+)/)?.[1] || dockName;
     }
 
-    // Get the dock class to assign the right color for each button
+    // Get dock class for color-coding
     function getDockClass(dock) {
-        const dockNumber = dock.match(/\d+/)[0];  // Extract the dock number
-        return `dock-${dockNumber}`;  // Return the appropriate class (dock-1, dock-2, etc.)
+        return `dock-${dock.match(/\d+/)[0]}`;
     }
 
+    // Display messages for success/errors
     function displayMessage(message, type) {
-        const container = $("#possibleTimes");
         const messageClass = type === 'success' ? 'success' : 'error';
-        container.html(`<div class="${messageClass}">${message}</div>`);
+        $("#possibleTimes").html(`<div class="${messageClass}">${message}</div>`);
     }
-
-    // Modal Handling
-    $(".close").click(function () {
-        $("#routeDetailsModal").hide();
-    });
-
-    $(window).click(function (event) {
-        if (event.target == document.getElementById("routeDetailsModal")) {
-            $("#routeDetailsModal").hide();
-        }
-    });
 });
