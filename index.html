@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dock Scheduler</title>
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -10,7 +11,7 @@
     <h1>Dock Schedule Checker</h1>
 
     <div id="controls">
-        <textarea id="jsonInput" rows="10" cols="50" placeholder="Paste JSON here"></textarea>
+        <textarea id="jsonInput" rows="5" cols="50" placeholder="Paste JSON here"></textarea>
         <button id="loadButton">Load Routes</button>
     </div>
 
@@ -18,56 +19,21 @@
     <select id="routeSelect">
         <option value="">Select a route</option>
     </select>
-
     <button id="analyzeButton">Analyze</button>
 
     <h2>Available Docks and Times</h2>
     <div id="possibleTimes"></div>
 
-    <!-- Added dock selector -->
-    <select id="dockSelect">
-        <option value="">Select a Dock</option>
-        <option value="Dock 1">Dock 1</option>
-        <option value="Dock 2">Dock 2</option>
-        <option value="Dock 3">Dock 3</option>
-        <option value="Dock 4">Dock 4</option>
-    </select>
-
     <h2>Dock Calendar</h2>
-    <div id="calendar">
-        <div class="dock" id="dock1">Dock 1</div>
-        <div class="dock" id="dock2">Dock 2</div>
-        <div class="dock" id="dock3">Dock 3</div>
-        <div class="dock" id="dock4">Dock 4</div>
-    </div>
-
-    <!-- Added settings -->
-    <div id="settingsMenu">
-        <h2>Settings</h2>
-        <label for="timeMargin">Time Margin (minutes):</label>
-        <input type="number" id="timeMargin" value="5">
-        <label for="slotInterval">Slot Interval (minutes):</label>
-        <input type="number" id="slotInterval" value="30">
-        <label for="dockNames">Custom Dock Names (comma separated):</label>
-        <input type="text" id="dockNames" placeholder="Dock 1,Dock 2,Dock 3,Dock 4">
-        <label for="dayStartTime">Day Start Time (24h format):</label>
-        <input type="time" id="dayStartTime" value="07:00">
-        <label for="dayEndTime">Day End Time (24h format):</label>
-        <input type="time" id="dayEndTime" value="20:00">
-        <label for="maxMovesPerDay">Max Moves per Day:</label>
-        <input type="number" id="maxMovesPerDay" value="10">
-        <label for="dockCapacity">Dock Capacity (default: 1 truck):</label>
-        <input type="number" id="dockCapacity" value="1">
-        <label for="displayOverlaps">Display Overlaps (Y/N):</label>
-        <input type="text" id="displayOverlaps" value="N">
-        <label for="highlightMovedRoutes">Highlight Moved Routes (Y/N):</label>
-        <input type="text" id="highlightMovedRoutes" value="Y">
-        <label for="colorScheme">Color Scheme (light/dark):</label>
-        <input type="text" id="colorScheme" value="light">
+    <div id="calendar" class="dock-grid">
+        <div id="dock1" class="dock"></div>
+        <div id="dock2" class="dock"></div>
+        <div id="dock3" class="dock"></div>
+        <div id="dock4" class="dock"></div>
     </div>
 
     <script src="calendar.js"></script>
-    <script src="settings.js"></script>
     <script src="app.js"></script>
+
 </body>
 </html>

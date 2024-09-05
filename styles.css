@@ -4,17 +4,18 @@ body {
     margin: 0;
     padding: 20px;
 }
+
 h1, h2 {
     text-align: center;
     color: #333;
 }
+
 #controls {
     display: flex;
-    flex-direction: column;
-    align-items: center;
+    justify-content: center;
     margin: 20px auto;
-    max-width: 600px;
 }
+
 textarea, select, button {
     font-size: 1em;
     padding: 10px;
@@ -22,21 +23,52 @@ textarea, select, button {
     border: 1px solid #ccc;
     border-radius: 5px;
 }
+
 button {
     background-color: #4CAF50;
     color: white;
     cursor: pointer;
-    transition: background-color 0.3s ease;
 }
+
 button:hover {
     background-color: #45a049;
 }
+
+#possibleTimes {
+    margin: 20px auto;
+    font-size: 1.1em;
+    max-width: 900px;
+    padding: 15px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+}
+
+.dock-time {
+    padding: 10px;
+    margin-bottom: 5px;
+    border-bottom: 1px solid #ddd;
+}
+
+.move-button {
+    background-color: #ff9800;
+    color: white;
+    border: none;
+    padding: 5px;
+    cursor: pointer;
+}
+
 #calendar {
+    margin-top: 20px;
+    padding: 20px;
+}
+
+.dock-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 20px;
-    margin-top: 20px;
 }
+
 .dock {
     background-color: #f8f8f8;
     padding: 15px;
@@ -44,51 +76,14 @@ button:hover {
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     transition: box-shadow 0.3s ease;
 }
+
 .dock:hover {
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-    cursor: pointer;
 }
+
 .dock span {
     display: block;
     padding: 5px;
     border: 1px solid #ccc;
     margin: 5px 0;
-}
-#possibleTimes {
-    text-align: left;
-    margin: 20px;
-    font-size: 1.2em;
-    max-width: 600px;
-    margin-left: auto;
-    margin-right: auto;
-    padding: 15px;
-    background: #f9f9f9;
-    border: 1px solid #ddd;
-    border-radius: 10px;
-}
-
-#possibleTimes .dock-time {
-    padding: 10px;
-    border-bottom: 1px solid #ddd;
-    font-size: 1.1em;
-}
-
-#possibleTimes .move-button {
-    background-color: #ff9800;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    cursor: pointer;
-    margin-left: 10px;
-}
-
-#settingsMenu {
-    margin-top: 40px;
-    padding: 30px;
-    background-color: #fff;
-    max-width: 600px;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    margin-left: auto;
-    margin-right: auto;
 }
