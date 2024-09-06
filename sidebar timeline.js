@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         IKEA Route Status Checker
 // @namespace    http://tampermonkey.net/
-// @version      2.0
+// @version      3.2
 // @description  Check and display status of IKEA route stops with advanced features
 // @match        https://services.ikea.nl/routes/timelines*
 // @grant        none
@@ -17,6 +17,9 @@
     };
 
     let routes = [];
+    let currentHighlights = [];
+    let latestApiData = null;
+    let isFirstApiRequest = true;
 
     function createSidebar() {
         const sidebar = document.createElement('div');
@@ -35,6 +38,17 @@
             display: flex;
             flex-direction: column;
         `;
+
+        const resizer = document.createElement('div');
+        resizer.style.cssText = `
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 5px;
+            cursor: ew-resize;
+        `;
+        sidebar.appendChild(resizer);
 
         const toggleButton = document.createElement('button');
         toggleButton.textContent = '☰';
@@ -59,6 +73,18 @@
         const title = document.createElement('h2');
         title.textContent = 'Route Checker';
         content.appendChild(title);
+
+        const updateDataButton = document.createElement('button');
+        updateDataButton.textContent = 'Update Data';
+        updateDataButton.style.display = 'none';
+        updateDataButton.addEventListener('click', () => {
+            if (latestApiData) {
+                routes = latestApiData.routes;
+                showView('status');
+                updateDataButton.style.display = 'none';
+            }
+        });
+        content.appendChild(updateDataButton);
 
         const nav = document.createElement('nav');
         nav.innerHTML = `
@@ -89,7 +115,24 @@
             }
         });
 
-        return sidebar;
+        let isResizing = false;
+        resizer.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', () => {
+                isResizing = false;
+                document.removeEventListener('mousemove', handleMouseMove);
+            });
+        });
+
+        function handleMouseMove(e) {
+            if (isResizing) {
+                const newWidth = window.innerWidth - e.clientX;
+                sidebar.style.width = `${newWidth}px`;
+            }
+        }
+
+        return { sidebar, updateDataButton };
     }
 
     function showView(viewName) {
@@ -120,6 +163,12 @@
         filterInput.style.marginBottom = '10px';
         tableContainer.appendChild(filterInput);
 
+        const showIncompleteToggle = document.createElement('label');
+        showIncompleteToggle.innerHTML = '<input type="checkbox"> Show incomplete only';
+        showIncompleteToggle.style.marginBottom = '10px';
+        showIncompleteToggle.style.display = 'block';
+        tableContainer.appendChild(showIncompleteToggle);
+
         const table = document.createElement('table');
         table.style.borderCollapse = 'collapse';
         table.style.width = '100%';
@@ -131,6 +180,8 @@
             th.style.border = '1px solid black';
             th.style.padding = '8px';
             th.style.backgroundColor = '#f2f2f2';
+            th.style.cursor = 'pointer';
+            th.addEventListener('click', () => sortTable(table, th.cellIndex));
             headerRow.appendChild(th);
         });
 
@@ -139,30 +190,104 @@
 
         tableContainer.appendChild(table);
 
-        filterInput.addEventListener('input', () => updateTable(tbody, filterInput.value));
-        updateTable(tbody, '');
+        const removeHighlightButton = document.createElement('button');
+        removeHighlightButton.textContent = 'Remove Highlights';
+        removeHighlightButton.style.marginTop = '10px';
+        removeHighlightButton.addEventListener('click', removeHighlights);
+        tableContainer.appendChild(removeHighlightButton);
+
+        filterInput.addEventListener('input', () => updateTable(tbody, filterInput.value, showIncompleteToggle.querySelector('input').checked));
+        showIncompleteToggle.querySelector('input').addEventListener('change', () => updateTable(tbody, filterInput.value, showIncompleteToggle.querySelector('input').checked));
+        updateTable(tbody, '', false);
 
         return tableContainer;
     }
 
-    function updateTable(tbody, filter) {
+    function updateTable(tbody, filter, showIncompleteOnly) {
         tbody.innerHTML = '';
-        routes.forEach(route => {
-            if (route.slug.toLowerCase().includes(filter.toLowerCase())) {
-                route.stops.forEach((stop, index) => {
+        routes.forEach((route, routeIndex) => {
+            route.stops.forEach((stop, index) => {
+                if ((!showIncompleteOnly || stop.status !== 'Completed') &&
+                    (route.slug.toLowerCase().includes(filter.toLowerCase()) ||
+                     `Stop ${index + 1}`.toLowerCase().includes(filter.toLowerCase()) ||
+                     stop.status.toLowerCase().includes(filter.toLowerCase()) ||
+                     (stop.status !== 'Completed').toString().toLowerCase().includes(filter.toLowerCase()))) {
                     const row = tbody.insertRow();
                     [route.slug, `Stop ${index + 1}`, stop.status, stop.status !== 'Completed'].forEach((text, cellIndex) => {
                         const cell = row.insertCell();
-                        cell.textContent = text.toString();
+                        if (cellIndex === 1) {
+                            const link = document.createElement('a');
+                            link.href = `https://services.ikea.nl/routes/details/${route.slug}`;
+                            link.textContent = text.toString();
+                            link.target = '_blank';
+                            cell.appendChild(link);
+                        } else {
+                            cell.textContent = text.toString();
+                        }
                         cell.style.border = '1px solid black';
                         cell.style.padding = '8px';
+                        cell.style.userSelect = 'text';
+
+                        // Alternating colors for routes and stops
+                        const routeColor = routeIndex % 2 === 0 ? ['#e6f2ff', '#b3d9ff'] : ['#e6ffe6', '#b3ffb3'];
+                        cell.style.backgroundColor = index % 2 === 0 ? routeColor[0] : routeColor[1];
+
                         if (cellIndex === 3) {
                             cell.style.backgroundColor = text ? '#ffcccb' : '#90EE90';
                         }
+                        if (cellIndex === 0) {
+                            cell.style.cursor = 'pointer';
+                            cell.addEventListener('click', () => highlightSlug(route.slug));
+                        }
                     });
-                });
-            }
+                }
+            });
         });
+    }
+
+    function sortTable(table, columnIndex) {
+        const tbody = table.tBodies[0];
+        const rows = Array.from(tbody.rows);
+        const direction = table.dataset.sortDirection === 'asc' ? -1 : 1;
+
+        rows.sort((a, b) => {
+            let aValue = a.cells[columnIndex].textContent;
+            let bValue = b.cells[columnIndex].textContent;
+            if (columnIndex === 1) { // Sort "Stop X" numerically
+                aValue = parseInt(aValue.split(' ')[1]);
+                bValue = parseInt(bValue.split(' ')[1]);
+            } else if (columnIndex === 3) { // Sort boolean values
+                aValue = aValue === 'true';
+                bValue = bValue === 'true';
+            }
+            if (aValue < bValue) return -direction;
+            if (aValue > bValue) return direction;
+            return 0;
+        });
+
+        rows.forEach(row => tbody.appendChild(row));
+        table.dataset.sortDirection = direction === 1 ? 'asc' : 'desc';
+    }
+
+    function highlightSlug(slug) {
+        removeHighlights();
+        const dataTable = document.querySelector('data-table');
+        if (dataTable) {
+            const elements = dataTable.querySelectorAll('*');
+            elements.forEach(element => {
+                if (element.textContent.includes(slug)) {
+                    element.style.backgroundColor = 'yellow';
+                    currentHighlights.push(element);
+                }
+            });
+        }
+    }
+
+    function removeHighlights() {
+        currentHighlights.forEach(element => {
+            element.style.backgroundColor = '';
+        });
+        currentHighlights = [];
     }
 
     function createTimeCheckTool() {
@@ -249,8 +374,14 @@
 
     function handleInterceptedResponse(response) {
         response.clone().json().then(data => {
-            routes = data.routes;
-            showView('status');
+            latestApiData = data;
+            if (isFirstApiRequest) {
+                routes = data.routes;
+                showView('status');
+                isFirstApiRequest = false;
+            } else {
+                updateDataButton.style.display = 'block';
+            }
         });
         return response;
     }
@@ -265,7 +396,7 @@
         });
     };
 
-    createSidebar();
+    const { sidebar, updateDataButton } = createSidebar();
     showView('status');
     setInterval(() => checkSegmentsWithRetry(CONFIG.DEFAULT_MIN_TIME), 30000);
 })();
